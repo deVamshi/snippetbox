@@ -76,6 +76,16 @@ func main() {
 		ErrorLog:  app.errorLogger,
 		Handler:   app.routes(),
 		TLSConfig: tlsCfg,
+
+		// after what time the keep-alive connections
+		// need to be closed
+		IdleTimeout: time.Minute,
+		// time duration within which the headers and body
+		// the server should read
+		ReadTimeout: time.Second * 5,
+		// time duration within which the server should take
+		// to write as response
+		WriteTimeout: time.Second * 10,
 	}
 
 	app.infoLogger.Printf("Listening on https://localhost%s", *addr)
