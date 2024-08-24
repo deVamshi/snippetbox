@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -66,10 +67,15 @@ func main() {
 		sessionManager: sessionManager,
 	}
 
+	tlsCfg := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	srv := http.Server{
-		Addr:     *addr,
-		ErrorLog: app.errorLogger,
-		Handler:  app.routes(),
+		Addr:      *addr,
+		ErrorLog:  app.errorLogger,
+		Handler:   app.routes(),
+		TLSConfig: tlsCfg,
 	}
 
 	app.infoLogger.Printf("Listening on https://localhost%s", *addr)
@@ -91,4 +97,4 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// 426/ 232
+// 426/ 252
