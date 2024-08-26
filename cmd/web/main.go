@@ -24,6 +24,7 @@ type application struct {
 	infoLogger     *log.Logger
 	errorLogger    *log.Logger
 	snippets       *models.SnippetModel
+	users          *models.UserModel
 	templateCache  map[string]*template.Template
 	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
@@ -57,11 +58,10 @@ func main() {
 	sessionManager.Cookie.Secure = true
 
 	app := &application{
-		infoLogger:  infoLogger,
-		errorLogger: errorLogger,
-		snippets: &models.SnippetModel{
-			DB: db,
-		},
+		infoLogger:     infoLogger,
+		errorLogger:    errorLogger,
+		snippets:       &models.SnippetModel{DB: db},
+		users:          &models.UserModel{DB: db},
 		templateCache:  templateCache,
 		formDecoder:    form.NewDecoder(),
 		sessionManager: sessionManager,
