@@ -108,12 +108,64 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 
 }
 
+type userSignupForm struct {
+	Name                string `form:"name"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
+}
+
 func (app *application) signUpUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Display form to signup")
+	data := app.newTemplateData(r)
+	data.Form = userSignupForm{}
+
+	app.render(w, http.StatusOK, "signup.html", data)
+
 }
 
 func (app *application) signUpUserPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Create user in db")
+
+	form := userSignupForm{}
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// validations
+	form.CheckField(validator.NotBlank(form.Name), "name", "this field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Email), "email", "this field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "enter a valid email")
+	form.CheckField(validator.NotBlank(form.Password), "password", "password cannot be empty")
+	form.CheckField(validator.MinChars(form.Password, 8), "password", "password should be 8 chars long")
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "signup.html", data)
+		return
+	}
+
+	err = app.users.Insert(form.Name, form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "email already exists")
+			data := app.newTemplateData(r)
+			data.Form = form
+
+			app.render(w, http.StatusUnprocessableEntity, "signup.html", data)
+		} else {
+			app.serverError(w, err)
+		}
+
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "flash", "signup successful, please login")
+
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+
 }
 func (app *application) logInUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Display login form")
