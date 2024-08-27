@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/deVamshi/snippetbox/ui"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
@@ -15,9 +16,13 @@ func (app *application) routes() http.Handler {
 		app.notFound(w)
 	})
 
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	// normal file system from disc
+	// fileServer := http.FileServer(http.Dir("./ui/static/"))
 
-	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+	// embedded file system
+	fileServer := http.FileServer(http.FS(ui.Files))
+
+	router.Handler(http.MethodGet, "/static/*filepath", fileServer)
 
 	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 	// unprotected routes
