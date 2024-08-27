@@ -20,18 +20,19 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	dynamic := alice.New(app.sessionManager.LoadAndSave)
-
+	// unprotected routes
 	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.handleHome))
 	router.Handler(http.MethodGet, "/snippet/view/:id", dynamic.ThenFunc(app.snippetView))
-	router.Handler(http.MethodGet, "/snippet/create", dynamic.ThenFunc(app.snippetCreate))
-	router.Handler(http.MethodPost, "/snippet/create", dynamic.ThenFunc(app.snippetCreatePost))
-
-	// auth
 	router.Handler(http.MethodGet, "/user/signup", dynamic.ThenFunc(app.signUpUser))
 	router.Handler(http.MethodPost, "/user/signup", dynamic.ThenFunc(app.signUpUserPost))
 	router.Handler(http.MethodGet, "/user/login", dynamic.ThenFunc(app.logInUser))
 	router.Handler(http.MethodPost, "/user/login", dynamic.ThenFunc(app.logInUserPost))
-	router.Handler(http.MethodPost, "/user/logout", dynamic.ThenFunc(app.logoutUserPost))
+
+	protected := dynamic.Append(app.requireAuth)
+	// protected routes
+	router.Handler(http.MethodGet, "/snippet/create", protected.ThenFunc(app.snippetCreate))
+	router.Handler(http.MethodPost, "/snippet/create", protected.ThenFunc(app.snippetCreatePost))
+	router.Handler(http.MethodPost, "/user/logout", protected.ThenFunc(app.logoutUserPost))
 
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 
